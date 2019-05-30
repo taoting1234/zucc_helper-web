@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>用户中心</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="renderer" content="webkit">
+  <link href="https://cdn.bootcss.com/weui/1.1.3/style/weui.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="weui-cells__title"> 用户中心</div>
+<div class="weui-cells__title"> 当前绑定的正方用户：<a id="zf_username"></a> <a id="unbind" href="#">点击解除绑定</a></div>
+<div class="weui-cells__title"> 修改学年学期</div>
+<div class="weui-cells weui-cells_form">
+  <div class="weui-cells__title"> 默认学年：<a id="xn"></a></div>
+  <div class="weui-cell">
+    <div class="weui-cell__hd"><label class="weui-label">学年：</label></div>
+    <div class="weui-cell__bd">
+      <input id="xn_input" class="weui-input" type="text"/>
+    </div>
+  </div>
+  <div class="weui-cells__title"> 默认学期：<a id="xq"></a></div>
+  <div class="weui-cell">
+    <div class="weui-cell__hd"><label class="weui-label">学期：</label></div>
+    <div class="weui-cell__bd">
+      <input id="xq_input" class="weui-input" type="text"/>
+    </div>
+  </div>
+</div>
+<div class="weui-btn-area">
+  <a class="weui-btn weui-btn_primary" id="submit">提交</a>
+</div>
+
+</body>
+<script src="js/base.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.js"></script>
+<script>
+  let default_xn;
+  let default_xq;
+  let t = 1;
+  ajax('http://wx.newitd.com/v1/system/get_default_info', 'post', {}).then((data) => {
+    if (data.code === 0) {
+      default_xn = data.xn;
+      default_xq = data.xq;
+      console.log(default_xn);
+      console.log(default_xq);
+      $('#xn').text(default_xn);
+      $('#xq').text(default_xq);
+      t = 0;
+    } else {
+      alert(data.msg);
+    }
+  });
+  let timeout = 10;
+
+  function f() {
+    if (t !== 0) {
+      setTimeout(f, timeout);
+    }
+  }
+
+  setTimeout(f, timeout);
+
+  ajax('http://wx.newitd.com/v1/user/get_user_info', 'post', {}).then((data) => {
+    if (data.code === 0) {
+      let xn = data.xn;
+      let xq = data.xq;
+      let zf_username = data.username;
+      if (xn === null) {
+        xn = default_xn;
+      }
+      if (xq === null) {
+        xq = default_xq;
+      }
+      if (zf_username === null) {
+        zf_username = "你还未绑定正方账号"
+      }
+      $('#xn_input').val(xn);
+      $('#xq_input').val(xq);
+      $('#zf_username').text(zf_username)
+    } else {
+      alert(data.msg);
+    }
+  });
+  $('#unbind').click(function () {
+    ajax('http://wx.newitd.com/v1/user/unbind_user', 'post', {}).then((data) => {
+      if (data.code === 0) {
+        alert('解绑成功');
+        WeixinJSBridge.call('closeWindow');
+      } else {
+        alert('解绑失败\n' + data.msg);
+      }
+    })
+  });
+  $('#submit').click(function () {
+    let xn_input = $('#xn_input').val();
+    if (!xn_input) {
+      alert('请输入学年');
+      return
+    }
+    let xq_input = $('#xq_input').val();
+    if (!xq_input) {
+      alert('请输入密码');
+      return
+    }
+    ajax('http://wx.newitd.com/v1/user/modify_user_info', 'post', {
+      xn: xn_input,
+      xq: xq_input,
+    }).then((data) => {
+      if (data.code === 0) {
+        alert('修改成功');
+        WeixinJSBridge.call('closeWindow');
+      } else {
+        alert('修改失败\n' + data.msg);
+      }
+    })
+  });
+</script>
+</html>
+
